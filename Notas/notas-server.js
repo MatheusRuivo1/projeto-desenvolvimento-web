@@ -16,7 +16,7 @@ app.use(express.static(__dirname)); // serve o index.html na raiz
 const pool = mysql.createPool({
   host     : 'localhost',
   user     : 'root',       // seu usuário MySQL
-  password : '',           // sua senha MySQL (deixe vazio se não tiver)
+  password : '#Senha123',           // sua senha MySQL (deixe vazio se não tiver)
   database : 'escola_db',
   waitForConnections: true,
   connectionLimit: 10,
