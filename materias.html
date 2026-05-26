@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSystem - Gerenciamento de Matérias</title>
+
+    <!-- Fonte Sora importada do Google Fonts: usada em todo o projeto para tipografia moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           VARIÁVEIS GLOBAIS DE COR E TEMA
+           Centralizadas aqui para facilitar manutenção: basta alterar
+           um valor aqui para refletir em todo o layout.
+        ============================================================ */
+        :root {
+            --bg-deep: #0b1a2e;               /* Fundo principal azul escuro */
+            --bg-card: #112240;               /* Fundo dos cards de estatística */
+            --bg-card-light: #172f52;         /* Variação mais clara do card (reserva) */
+            --bg-form: #ffffff;               /* Fundo do card branco interno */
+            --accent-blue: #1e6efa;           /* Azul de destaque (botões, IDs, foco) */
+            --accent-blue-hover: #1557d0;     /* Azul mais escuro no hover dos botões */
+            --text-primary: #e8f0fe;          /* Texto principal no fundo escuro */
+            --text-secondary: #8ba3c7;        /* Texto secundário / subtítulos */
+            --text-muted: #5a7aa0;            /* Texto bem suave (labels dos stats) */
+            --border: rgba(255,255,255,0.08); /* Borda sutil no fundo escuro */
+            --success: #22c55e;               /* Verde para status positivo */
+            --warning: #f59e0b;               /* Amarelo para alertas */
+            --danger: #ef4444;                /* Vermelho para exclusão / erros */
+            --info: #3b82f6;                  /* Azul informativo (reserva) */
+            --stat-border: rgba(255,255,255,0.06); /* Borda dos cards de stat */
+        }
+
+        /* Reset básico: remove margens/paddings padrão e garante box-sizing consistente */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ============================================================
+           BODY — fundo com gradiente radial para dar profundidade visual
+        ============================================================ */
+        body {
+            font-family: 'Sora', sans-serif;
+            background-color: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(30, 110, 250, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(17, 34, 64, 0.6) 0%, transparent 50%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 0 0 60px;
+        }
+
+        /* ============================================================
+           BADGE SUPERIOR — pílula com versão do sistema no topo da página
+        ============================================================ */
+        .top-badge {
+            display: flex;
+            justify-content: center;
+            padding: 28px 0 10px;
+        }
+        .top-badge span {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            color: var(--text-secondary);
+            padding: 5px 16px;
+            text-transform: uppercase;
+        }
+
+        /* ============================================================
+           CABEÇALHO DA PÁGINA — título centralizado com palavra em azul
+        ============================================================ */
+        .page-header {
+            text-align: center;
+            padding: 8px 20px 32px;
+        }
+        .page-header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+        .page-header h1 span {
+            color: var(--accent-blue); /* Palavra "Matérias" destacada em azul */
+        }
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-top: 6px;
+            font-weight: 400;
+        }
+
+        /* ============================================================
+           CARDS DE ESTATÍSTICAS — linha de métricas no topo do conteúdo
+           Cada card exibe um contador calculado pelo JS (atualizarStats)
+        ============================================================ */
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 0 24px 32px;
+            flex-wrap: wrap;       /* Quebra em telas menores */
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--stat-border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            min-width: 160px;
+            flex: 1;
+        }
+        .stat-card .label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        /* Modificadores de cor para cada métrica */
+        .stat-card .value.blue   { color: var(--accent-blue); }
+        .stat-card .value.green  { color: var(--success); }
+        .stat-card .value.yellow { color: var(--warning); }
+        .stat-card .value.red    { color: var(--danger); }
+
+        /* ============================================================
+           CARD PRINCIPAL — container branco que envolve formulário + tabela
+        ============================================================ */
+        .main-card {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .inner-card {
+            background: var(--bg-form);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.35); /* Sombra profunda para destaque */
+        }
+
+        /* ============================================================
+           SEÇÃO DO FORMULÁRIO — área superior do card branco
+        ============================================================ */
+        .form-section {
+            padding: 28px 32px 24px;
+            border-bottom: 1px solid #e8ecf1; /* Divisor entre form e tabela */
+        }
+        .form-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .form-title .icon-wrap {
+            width: 36px; height: 36px;
+            background: var(--accent-blue);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .form-title h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a2942;
+            margin: 0;
+        }
+        .form-title p {
+            font-size: 0.78rem;
+            color: #7a8fa8;
+            margin: 0;
+        }
+
+        /* Grid do formulário: 4 colunas (ID | Matéria | ID Professor | Botões) */
+        .form-row {
+            display: grid;
+            grid-template-columns: 120px 1fr 160px auto;
+            gap: 16px;
+            align-items: end;
+        }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #5a7090;
+            margin-bottom: 6px;
+        }
+        /* Estilo base para inputs e selects do formulário */
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #dde3ec;
+            border-radius: 9px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.85rem;
+            color: #1a2942;
+            background: #f8fafc;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        /* Efeito de foco com anel azul suave */
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(30,110,250,0.12);
+            background: #fff;
+        }
+        .form-group input::placeholder { color: #aab6c8; }
+
+        .btn-actions {
+            display: flex;
+            gap: 10px;
+        }
+        /* Botão primário — Registrar / Salvar */
+        .btn-primary-custom {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            padding: 10px 22px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary-custom:hover { background: var(--accent-blue-hover); }
+        .btn-primary-custom:active { transform: scale(0.97); } /* Feedback ao clicar */
+
+        /* Botão secundário — Limpar / Cancelar */
+        .btn-secondary-custom {
+            background: transparent;
+            color: #5a7090;
+            border: 1.5px solid #dde3ec;
+            border-radius: 9px;
+            padding: 10px 18px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-secondary-custom:hover { background: #f0f4fa; }
+
+        /* ============================================================
+           SEÇÃO DA TABELA — área inferior do card branco
+        ============================================================ */
+        .table-section {
+            padding: 24px 32px 28px;
+        }
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        /* Badge contador ao lado do título da tabela */
+        .table-header .count-badge {
+            background: #e8f0fe;
+            color: var(--accent-blue);
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 99px;
+            padding: 2px 10px;
+            margin-left: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead th {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            color: #7a8fa8;
+            padding: 10px 14px;
+            border-bottom: 1.5px solid #e8ecf1;
+            text-align: left;
+        }
+        thead th:last-child { text-align: right; }
+
+        tbody tr {
+            transition: background 0.15s;
+        }
+        tbody tr:hover { background: #f5f8ff; } /* Linha com highlight ao passar o mouse */
+
+        tbody td {
+            padding: 13px 14px;
+            font-size: 0.84rem;
+            color: #2c3e5a;
+            border-bottom: 1px solid #f0f3f8;
+            vertical-align: middle;
+        }
+        tbody td:last-child { text-align: right; }
+
+        /* ID da matéria destacado em azul para fácil identificação */
+        .td-id {
+            font-weight: 700;
+            color: var(--accent-blue);
+            font-size: 0.82rem;
+        }
+
+        /* Botão de editar — estilo azul suave */
+        .btn-edit {
+            background: #f0f6ff;
+            color: var(--accent-blue);
+            border: 1.5px solid #c7dcfe;
+            border-radius: 7px;
+            padding: 5px 14px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-edit:hover { background: #daeaff; }
+
+        /* Botão de excluir — estilo vermelho suave */
+        .btn-delete {
+            background: #fff5f5;
+            color: var(--danger);
+            border: 1.5px solid #fecdd3;
+            border-radius: 7px;
+            padding: 5px 10px;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 6px;
+            transition: background 0.15s;
+        }
+        .btn-delete:hover { background: #ffe4e6; }
+
+        /* Mensagem exibida quando não há nenhuma matéria cadastrada */
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: #aab6c8;
+            font-size: 0.88rem;
+        }
+
+        /* ============================================================
+           RESPONSIVIDADE — adaptações para telas menores que 700px
+        ============================================================ */
+        @media (max-width: 700px) {
+            .form-row { grid-template-columns: 1fr 1fr; } /* 2 colunas em mobile */
+            .btn-actions { grid-column: 1 / -1; }         /* Botões ocupam largura toda */
+            .stats-row { gap: 8px; }
+            .stat-card { min-width: 120px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Badge de versão centralizado no topo -->
+    <div class="top-badge"><span>⚙ EduSystem v1.0</span></div>
+
+    <!-- Cabeçalho com título e subtítulo da página -->
+    <div class="page-header">
+        <h1>Gerenciamento de <span>Matérias</span></h1>
+        <p>Cadastre, visualize, edite e remova matérias do sistema</p>
+    </div>
+
+    <!-- Cards de resumo — valores preenchidos dinamicamente pelo JS -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="label">Total de Matérias</div>
+            <div class="value blue" id="stat-total">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Matemática</div>
+            <div class="value green" id="stat-mat">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Português</div>
+            <div class="value yellow" id="stat-port">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Outras</div>
+            <div class="value" id="stat-outras">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Professores</div>
+            <div class="value red" id="stat-profs">0</div>
+        </div>
+    </div>
+
+    <!-- Card principal branco: contém formulário e tabela -->
+    <div class="main-card">
+        <div class="inner-card">
+
+            <!-- Seção do formulário de cadastro / edição -->
+            <div class="form-section">
+                <div class="form-title">
+                    <div class="icon-wrap">➕</div>
+                    <div>
+                        <h5>Adicionar Nova Matéria</h5>
+                        <p>Preencha os dados abaixo para registrar uma matéria</p>
+                    </div>
+                </div>
+
+                <form id="formMateria">
+                    <!--
+                        Campo oculto que guarda o ID da matéria sendo editada.
+                        Quando vazio = novo cadastro; quando preenchido = edição.
+                    -->
+                    <input type="hidden" id="materiaId">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ID</label>
+                            <input type="number" id="id" placeholder="ex: 101" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Matéria</label>
+                            <!-- Select com as matérias disponíveis no sistema -->
+                            <select id="nome" required>
+                                <option value="" selected disabled>Selecione...</option>
+                                <option value="Matemática">Matemática</option>
+                                <option value="Português">Português</option>
+                                <option value="História">História</option>
+                                <option value="Geografia">Geografia</option>
+                                <option value="Ciências">Ciências</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ID Professor</label>
+                            <input type="number" id="id_professor" placeholder="ex: 2024001" required>
+                        </div>
+                        <div class="btn-actions">
+                            <button type="submit" class="btn-primary-custom">+ Registrar</button>
+                            <button type="button" class="btn-secondary-custom" onclick="limparFormulario()">↺ Limpar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Seção da tabela de matérias cadastradas -->
+            <div class="table-section">
+                <div class="table-header">
+                    <div>
+                        <span style="font-size:0.92rem;font-weight:600;color:#1a2942;">Matérias Registradas</span>
+                        <!-- Badge com contagem total, atualizado pelo JS -->
+                        <span class="count-badge" id="count-badge">0</span>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome da Matéria</th>
+                            <th>ID Professor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <!-- tbody preenchido dinamicamente pela função renderizarTabela() -->
+                    <tbody id="tabela-corpo"></tbody>
+                </table>
+                <!-- Mensagem exibida quando o array de matérias está vazio -->
+                <div class="empty-state" id="empty-state" style="display:none;">Nenhuma matéria registrada ainda.</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ESTADO DA APLICAÇÃO
+        // Carrega matérias salvas no localStorage (persiste entre sessões).
+        // Se não houver dados salvos, inicia com array vazio.
+        // ============================================================
+        let materias = JSON.parse(localStorage.getItem('materias')) || [];
+
+        // Referências aos elementos do DOM usados com frequência
+        const form = document.getElementById('formMateria');
+        const tabelaCorpo = document.getElementById('tabela-corpo');
+
+        // ============================================================
+        // atualizarStats()
+        // Recalcula e exibe os contadores nos cards de estatística.
+        // Chamada sempre que o array `materias` é modificado.
+        // ============================================================
+        function atualizarStats() {
+            const total = materias.length;
+            const mat   = materias.filter(m => m.nome === 'Matemática').length;
+            const port  = materias.filter(m => m.nome === 'Português').length;
+            const outras = materias.filter(m => m.nome !== 'Matemática' && m.nome !== 'Português').length;
+
+            // Set garante que cada id_professor seja contado apenas uma vez
+            const profs = new Set(materias.map(m => m.id_professor)).size;
+
+            document.getElementById('stat-total').textContent  = total;
+            document.getElementById('stat-mat').textContent    = mat;
+            document.getElementById('stat-port').textContent   = port;
+            document.getElementById('stat-outras').textContent = outras;
+            document.getElementById('stat-profs').textContent  = profs;
+            document.getElementById('count-badge').textContent = total;
+        }
+
+        // ============================================================
+        // renderizarTabela()
+        // Limpa e reconstrói as linhas da tabela com base no array `materias`.
+        // Também salva o estado atualizado no localStorage e chama atualizarStats().
+        // ============================================================
+        function renderizarTabela() {
+            tabelaCorpo.innerHTML = '';
+            const empty = document.getElementById('empty-state');
+
+            if (materias.length === 0) {
+                // Exibe mensagem de lista vazia
+                empty.style.display = 'block';
+            } else {
+                empty.style.display = 'none';
+
+                materias.forEach((materia, index) => {
+                    // Cada linha recebe o índice do array para editar/excluir corretamente
+                    tabelaCorpo.innerHTML += `
+                    <tr>
+                        <td class="td-id">${materia.id}</td>
+                        <td>${materia.nome}</td>
+                        <td>${materia.id_professor}</td>
+                        <td>
+                            <button class="btn-edit" onclick="editarMateria(${index})">✎ Editar</button>
+                            <button class="btn-delete" onclick="deletarMateria(${index})">🗑</button>
+                        </td>
+                    </tr>`;
+                });
+            }
+
+            // Persiste os dados atualizados no localStorage
+            localStorage.setItem('materias', JSON.stringify(materias));
+            atualizarStats();
+        }
+
+        // ============================================================
+        // SUBMIT DO FORMULÁRIO — Create e Update
+        // Se materiaId estiver preenchido = atualiza registro existente.
+        // Se estiver vazio = cria novo registro.
+        // ============================================================
+        form.onsubmit = function (e) {
+            e.preventDefault(); // Evita reload da página
+
+            const idExistente = document.getElementById('materiaId').value;
+
+            const dados = {
+                id:           document.getElementById('id').value,
+                nome:         document.getElementById('nome').value,
+                id_professor: document.getElementById('id_professor').value
+            };
+
+            // Validação: impede IDs duplicados (exceto ao editar o próprio registro)
+            if (materias.some(m => m.id == dados.id && m.id != idExistente)) {
+                alert("Já existe uma matéria com esse ID!");
+                return;
+            }
+
+            if (idExistente) {
+                // UPDATE: substitui o objeto no índice encontrado
+                const index = materias.findIndex(m => m.id == idExistente);
+                materias[index] = dados;
+            } else {
+                // CREATE: adiciona novo objeto ao final do array
+                materias.push(dados);
+            }
+
+            limparFormulario();
+            renderizarTabela();
+        }
+
+        // ============================================================
+        // editarMateria(index)
+        // Preenche o formulário com os dados da matéria selecionada.
+        // O campo oculto `materiaId` sinaliza ao submit que é uma edição.
+        // ============================================================
+        window.editarMateria = function (index) {
+            const mat = materias[index];
+            document.getElementById('materiaId').value    = mat.id;
+            document.getElementById('id').value           = mat.id;
+            document.getElementById('nome').value         = mat.nome;
+            document.getElementById('id_professor').value = mat.id_professor;
+        }
+
+        // ============================================================
+        // deletarMateria(index)
+        // Remove o item do array pelo índice após confirmação do usuário.
+        // ============================================================
+        window.deletarMateria = function (index) {
+            if (confirm('Tem certeza que deseja excluir esta matéria?')) {
+                materias.splice(index, 1); // Remove 1 elemento na posição `index`
+                renderizarTabela();
+            }
+        }
+
+        // ============================================================
+        // limparFormulario()
+        // Reseta todos os campos do form e esvazia o campo oculto,
+        // voltando o modo do formulário de "edição" para "novo cadastro".
+        // ============================================================
+        function limparFormulario() {
+            form.reset();
+            document.getElementById('materiaId').value = '';
+        }
+
+        // Inicialização: renderiza a tabela ao carregar a página
+        renderizarTabela();
+    </script>
+
+</body>
+</html>
