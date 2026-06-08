@@ -115,5 +115,5 @@ app.delete('/notas/:id', async (req, res) => {
 // ── Inicia o servidor ────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀  Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📋  Acesse o sistema em http://localhost:${PORT}/index.html`);
+  console.log(`📋  Acesse o sistema em http://localhost:${PORT}/notas.html`);
 });
