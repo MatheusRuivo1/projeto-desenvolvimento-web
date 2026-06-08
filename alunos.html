@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alunos</title>
+    <style>
+      :root {
+        --primary-color: #4a90e2;
+        --secondary-color: #f5f6fa;
+        --success-color: #2ecc71;
+        --danger-color: #e74c3c;
+        --text-color: #2f3640;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--primary-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        color: var(--primary-color);
+      }
+
+      .form-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 5px;
+      }
+
+      .input-box {
+        display: flex;
+        flex-direction: column;
+      }
+
+      label {
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        outline: none;
+      }
+
+      input:focus {
+        border-color: var(--primary-color);
+      }
+
+      .btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+        transition: opacity 0.3s;
+      }
+
+      .btn:hover {
+        opacity: 0.8;
+      }
+      .btn-save {
+        background-color: var(--success-color);
+        width: 100%;
+        grid-column: 1 / -1;
+      }
+      .btn-edit {
+        background-color: var(--primary-color);
+        margin-right: 5px;
+      }
+      .btn-delete {
+        background-color: var(--danger-color);
+      }
+      .btn-cancel {
+        background-color: #95a5a6;
+        margin-top: 10px;
+        display: none;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th, td {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      th {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      tr:hover {
+        background-color: #f1f1f1;
+      }
+
+      @media (max-width: 600px) {
+        .form-group {
+          grid-template-columns: 1fr;
+        }
+        table {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Gestão de Alunos</h1>
+
+      <form class="form-group" id="alunoForm">
+        <div class="input-box">
+          <label>Nome</label>
+          <input type="text" id="nome" placeholder="Nome completo" required />
+        </div>
+        <div class="input-box">
+          <label>Idade</label>
+          <input type="number" id="idade" placeholder="Ex: 20" required />
+        </div>
+        <div class="input-box">
+          <label>E-mail</label>
+          <input type="email" id="email" placeholder="email@exemplo.com" required />
+        </div>
+        <div class="input-box">
+          <label>ID Turma</label>
+          <input type="text" id="id_turma" placeholder="Ex: T101" required />
+        </div>
+        <button type="submit" class="btn btn-save" id="btn-salvar">
+          Cadastrar Aluno
+        </button>
+        <button type="button" class="btn btn-cancel" id="cancelBtn">
+          Cancelar Edição
+        </button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Idade</th>
+            <th>Email</th>
+            <th>Turma</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:3001/alunos";
+      let alunos = [];
+      let alunoAtual = null; 
+
+      function displayStudents() {
+        const tbody = document.getElementById("tbody");
+        tbody.innerHTML = "";
+
+        alunos.forEach((aluno) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+              <td>${aluno.id}</td>
+              <td>${aluno.nome}</td>
+              <td>${aluno.idade}</td>
+              <td>${aluno.email}</td>
+              <td>${aluno.id_turma}</td>
+              <td>
+                  <button class="btn btn-edit" onclick="prepararEdicao(${aluno.id})">Editar</button>
+                  <button class="btn btn-delete" onclick="deleteStudent(${aluno.id})">Excluir</button>
+              </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Buscar dados do MySQL (via Back-end)
+      fetch(API_URL)
+        .then((response) => response.json())
+        .then((data) => {
+          alunos = data;
+          displayStudents();
+        })
+        .catch((error) => console.error("Error:", error));
+
+      document
+        .getElementById("alunoForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const aluno = {
+            nome: document.getElementById("nome").value,
+            idade: parseInt(document.getElementById("idade").value),
+            email: document.getElementById("email").value,
+            id_turma: document.getElementById("id_turma").value,
+          };
+
+          if (alunoAtual) {
+            fetch(`${API_URL}/${alunoAtual}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(aluno),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                const index = alunos.findIndex((a) => Number(a.id) === Number(alunoAtual));
+                alunos[index] = data;
+                displayStudents();
+                document.getElementById("alunoForm").reset();
+                alunoAtual = null;
+                document.getElementById("btn-salvar").innerText = "Cadastrar Aluno";
+                document.getElementById("cancelBtn").style.display = "none";
+              })
+              .catch((error) => console.error("Error:", error));
+          } else {
+            fetch(API_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(aluno),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                alunos.push(data);
+                displayStudents();
+                document.getElementById("alunoForm").reset();
+              })
+              .catch((error) => console.error("Error:", error));
+          }
+        });
+
+      function deleteStudent(id) {
+        if (confirm("Tem certeza que deseja excluir este aluno?")) {
+          fetch(`${API_URL}/${id}`, {
+            method: "DELETE",
+          })
+            .then((response) => {
+              if (response.ok) {
+                // Filtra e remove o aluno da array local usando os tipos numéricos corretos
+                alunos = alunos.filter((a) => Number(a.id) !== Number(id));
+                displayStudents(); // Redesenha a tela limpando o registro deletado
+              } else {
+                alert("Erro ao deletar do banco de dados MySQL.");
+              }
+            })
+            .catch((error) => console.error("Error:", error));
+        }
+      }
+
+      function prepararEdicao(id) {
+        const aluno = alunos.find((a) => Number(a.id) === Number(id));
+        if (aluno) {
+          document.getElementById("nome").value = aluno.nome;
+          document.getElementById("idade").value = aluno.idade;
+          document.getElementById("email").value = aluno.email;
+          document.getElementById("id_turma").value = aluno.id_turma;
+
+          alunoAtual = id;
+          document.getElementById("btn-salvar").innerText = "Atualizar Aluno";
+          document.getElementById("cancelBtn").style.display = "block";
+          window.scrollTo(0, 0);
+        }
+      }
+
+      document
+        .getElementById("cancelBtn")
+        .addEventListener("click", function () {
+          alunoAtual = null;
+          document.getElementById("btn-salvar").innerText = "Cadastrar Aluno";
+          document.getElementById("alunoForm").reset();
+          this.style.display = "none";
+        });
+    </script>
+  </body>
+</html>
