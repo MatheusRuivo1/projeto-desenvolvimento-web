@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSystem - Gerenciamento de Matérias</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0b1a2e;
+            --bg-card: #112240;
+            --bg-form: #ffffff;
+            --accent-blue: #1e6efa;
+            --accent-blue-hover: #1557d0;
+            --text-primary: #e8f0fe;
+            --text-secondary: #8ba3c7;
+            --text-muted: #5a7aa0;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --stat-border: rgba(255,255,255,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Sora', sans-serif;
+            background-color: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(30,110,250,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(17,34,64,0.6) 0%, transparent 50%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 0 0 60px;
+        }
+        .top-badge { display: flex; justify-content: center; padding: 28px 0 10px; }
+        .top-badge span {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 99px;
+            font-size: 11px; font-weight: 600; letter-spacing: 1.4px;
+            color: var(--text-secondary);
+            padding: 5px 16px; text-transform: uppercase;
+        }
+        .page-header { text-align: center; padding: 8px 20px 32px; }
+        .page-header h1 { font-size: 2.4rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+        .page-header h1 span { color: var(--accent-blue); }
+        .page-header p { color: var(--text-secondary); font-size: 0.88rem; margin-top: 6px; }
+        .stats-row {
+            display: flex; justify-content: center; gap: 12px;
+            padding: 0 24px 32px; flex-wrap: wrap;
+            max-width: 1000px; margin: 0 auto;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--stat-border);
+            border-radius: 12px; padding: 16px 24px;
+            min-width: 160px; flex: 1;
+        }
+        .stat-card .label {
+            font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+            color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;
+        }
+        .stat-card .value { font-size: 1.9rem; font-weight: 700; color: #fff; }
+        .stat-card .value.blue   { color: var(--accent-blue); }
+        .stat-card .value.green  { color: var(--success); }
+        .stat-card .value.yellow { color: var(--warning); }
+        .stat-card .value.red    { color: var(--danger); }
+        .main-card { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+        .inner-card {
+            background: var(--bg-form); border-radius: 20px;
+            overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+        }
+        .form-section { padding: 28px 32px 24px; border-bottom: 1px solid #e8ecf1; }
+        .form-title { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .form-title .icon-wrap {
+            width: 36px; height: 36px; background: var(--accent-blue);
+            border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+        .form-title h5 { font-size: 1rem; font-weight: 600; color: #1a2942; margin: 0; }
+        .form-title p  { font-size: 0.78rem; color: #7a8fa8; margin: 0; }
+        .form-row { display: grid; grid-template-columns: 120px 1fr 160px auto; gap: 16px; align-items: end; }
+        .form-group label {
+            display: block; font-size: 11px; font-weight: 600;
+            letter-spacing: 0.8px; text-transform: uppercase; color: #5a7090; margin-bottom: 6px;
+        }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 14px;
+            border: 1.5px solid #dde3ec; border-radius: 9px;
+            font-family: 'Sora', sans-serif; font-size: 0.85rem;
+            color: #1a2942; background: #f8fafc; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(30,110,250,0.12);
+            background: #fff;
+        }
+        .form-group input::placeholder { color: #aab6c8; }
+        .btn-actions { display: flex; gap: 10px; }
+        .btn-primary-custom {
+            background: var(--accent-blue); color: #fff; border: none;
+            border-radius: 9px; padding: 10px 22px;
+            font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; white-space: nowrap; transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary-custom:hover    { background: var(--accent-blue-hover); }
+        .btn-primary-custom:active   { transform: scale(0.97); }
+        .btn-primary-custom:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-secondary-custom {
+            background: transparent; color: #5a7090;
+            border: 1.5px solid #dde3ec; border-radius: 9px; padding: 10px 18px;
+            font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 500;
+            cursor: pointer; white-space: nowrap; transition: background 0.2s;
+        }
+        .btn-secondary-custom:hover { background: #f0f4fa; }
+        .table-section { padding: 24px 32px 28px; }
+        .table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .count-badge {
+            background: #e8f0fe; color: var(--accent-blue);
+            font-size: 11px; font-weight: 700;
+            border-radius: 99px; padding: 2px 10px; margin-left: 10px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            font-size: 10.5px; font-weight: 700; letter-spacing: 0.9px;
+            text-transform: uppercase; color: #7a8fa8;
+            padding: 10px 14px; border-bottom: 1.5px solid #e8ecf1; text-align: left;
+        }
+        thead th:last-child { text-align: right; }
+        tbody tr { transition: background 0.15s; }
+        tbody tr:hover { background: #f5f8ff; }
+        tbody td {
+            padding: 13px 14px; font-size: 0.84rem; color: #2c3e5a;
+            border-bottom: 1px solid #f0f3f8; vertical-align: middle;
+        }
+        tbody td:last-child { text-align: right; }
+        .td-id { font-weight: 700; color: var(--accent-blue); font-size: 0.82rem; }
+        .btn-edit {
+            background: #f0f6ff; color: var(--accent-blue);
+            border: 1.5px solid #c7dcfe; border-radius: 7px; padding: 5px 14px;
+            font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; transition: background 0.15s;
+        }
+        .btn-edit:hover { background: #daeaff; }
+        .btn-delete {
+            background: #fff5f5; color: var(--danger);
+            border: 1.5px solid #fecdd3; border-radius: 7px; padding: 5px 10px;
+            font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; margin-left: 6px; transition: background 0.15s;
+        }
+        .btn-delete:hover { background: #ffe4e6; }
+        .empty-state { text-align: center; padding: 40px 0; color: #aab6c8; font-size: 0.88rem; }
+        /* Toast de feedback */
+        .toast {
+            position: fixed; bottom: 28px; right: 28px;
+            padding: 12px 22px; border-radius: 10px;
+            font-family: 'Sora', sans-serif; font-size: 0.84rem; font-weight: 600;
+            color: #fff; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 999; pointer-events: none;
+        }
+        .toast.show    { opacity: 1; transform: translateY(0); }
+        .toast.success { background: #22c55e; }
+        .toast.error   { background: #ef4444; }
+        @media (max-width: 700px) {
+            .form-row { grid-template-columns: 1fr 1fr; }
+            .btn-actions { grid-column: 1 / -1; }
+            .stats-row { gap: 8px; }
+            .stat-card { min-width: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-badge"><span>⚙ EduSystem v1.0</span></div>
+
+    <div class="page-header">
+        <h1>Gerenciamento de <span>Matérias</span></h1>
+        <p>Cadastre, visualize, edite e remova matérias do sistema</p>
+    </div>
+
+    <!-- Cards preenchidos via GET /materias/stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="label">Total de Matérias</div>
+            <div class="value blue" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Matemática</div>
+            <div class="value green" id="stat-mat">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Português</div>
+            <div class="value yellow" id="stat-port">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Outras</div>
+            <div class="value" id="stat-outras">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Professores</div>
+            <div class="value red" id="stat-profs">—</div>
+        </div>
+    </div>
+
+    <div class="main-card">
+        <div class="inner-card">
+
+            <div class="form-section">
+                <div class="form-title">
+                    <div class="icon-wrap">➕</div>
+                    <div>
+                        <h5 id="form-titulo">Adicionar Nova Matéria</h5>
+                        <p  id="form-subtitulo">Preencha os dados abaixo para registrar uma matéria</p>
+                    </div>
+                </div>
+
+                <form id="formMateria">
+                    <!-- Guarda o ID original para o PUT saber qual registro editar -->
+                    <input type="hidden" id="materiaIdOriginal">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ID</label>
+                            <input type="number" id="id" placeholder="ex: 101" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Matéria</label>
+                            <select id="nome" required>
+                                <option value="" selected disabled>Selecione...</option>
+                                <option value="Matemática">Matemática</option>
+                                <option value="Português">Português</option>
+                                <option value="História">História</option>
+                                <option value="Geografia">Geografia</option>
+                                <option value="Ciências">Ciências</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ID Professor</label>
+                            <input type="number" id="id_professor" placeholder="ex: 2024001" required>
+                        </div>
+                        <div class="btn-actions">
+                            <button type="submit" class="btn-primary-custom" id="btn-submit">+ Registrar</button>
+                            <button type="button" class="btn-secondary-custom" onclick="limparFormulario()">↺ Limpar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-section">
+                <div class="table-header">
+                    <div>
+                        <span style="font-size:0.92rem;font-weight:600;color:#1a2942;">Matérias Registradas</span>
+                        <span class="count-badge" id="count-badge">—</span>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome da Matéria</th>
+                            <th>ID Professor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <!-- Preenchido via GET /materias -->
+                    <tbody id="tabela-corpo"></tbody>
+                </table>
+                <div class="empty-state" id="empty-state" style="display:none;">Nenhuma matéria registrada ainda.</div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // URL base da API — aponta para o server.js Node.js
+        const API = "http://localhost:3000";
+
+        const form        = document.getElementById("formMateria");
+        const tabelaCorpo = document.getElementById("tabela-corpo");
+        const btnSubmit   = document.getElementById("btn-submit");
+
+        // ============================================================
+        // mostrarToast(msg, tipo)
+        // Exibe notificação flutuante por 3 segundos
+        // ============================================================
+        function mostrarToast(msg, tipo = "success") {
+            const toast = document.getElementById("toast");
+            toast.textContent = msg;
+            toast.className = `toast ${tipo} show`;
+            setTimeout(() => { toast.className = "toast"; }, 3000);
+        }
+
+        // ============================================================
+        // carregarStats()
+        // GET /materias/stats → preenche os cards de estatística
+        // ============================================================
+        async function carregarStats() {
+            try {
+                const res  = await fetch(`${API}/materias/stats`);
+                const data = await res.json();
+                document.getElementById("stat-total").textContent  = data.total;
+                document.getElementById("stat-mat").textContent    = data.matematica;
+                document.getElementById("stat-port").textContent   = data.portugues;
+                document.getElementById("stat-outras").textContent = data.outras;
+                document.getElementById("stat-profs").textContent  = data.professores;
+            } catch (e) {
+                console.error("Erro ao carregar stats:", e);
+            }
+        }
+
+        // ============================================================
+        // carregarTabela()
+        // GET /materias → renderiza as linhas da tabela
+        // ============================================================
+        async function carregarTabela() {
+            try {
+                const res      = await fetch(`${API}/materias`);
+                const materias = await res.json();
+
+                tabelaCorpo.innerHTML = "";
+                const empty = document.getElementById("empty-state");
+
+                if (materias.length === 0) {
+                    empty.style.display = "block";
+                } else {
+                    empty.style.display = "none";
+                    materias.forEach((m) => {
+                        tabelaCorpo.innerHTML += `
+                        <tr>
+                            <td class="td-id">${m.id}</td>
+                            <td>${m.nome}</td>
+                            <td>${m.id_professor}</td>
+                            <td>
+                                <button class="btn-edit"   onclick="editarMateria(${m.id}, '${m.nome}', ${m.id_professor})">✎ Editar</button>
+                                <button class="btn-delete" onclick="deletarMateria(${m.id})">🗑</button>
+                            </td>
+                        </tr>`;
+                    });
+                }
+
+                document.getElementById("count-badge").textContent = materias.length;
+                await carregarStats();
+
+            } catch (e) {
+                console.error("Erro ao carregar tabela:", e);
+                mostrarToast("Não foi possível conectar ao servidor.", "error");
+            }
+        }
+
+        // ============================================================
+        // SUBMIT — POST (criar) ou PUT (editar)
+        // ============================================================
+        form.onsubmit = async function (e) {
+            e.preventDefault();
+
+            const idOriginal = document.getElementById("materiaIdOriginal").value;
+            const dados = {
+                id:           parseInt(document.getElementById("id").value),
+                nome:         document.getElementById("nome").value,
+                id_professor: parseInt(document.getElementById("id_professor").value)
+            };
+
+            btnSubmit.disabled = true;
+
+            try {
+                let res;
+
+                if (idOriginal) {
+                    // PUT /materias/:id — atualiza registro existente
+                    res = await fetch(`${API}/materias/${idOriginal}`, {
+                        method:  "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body:    JSON.stringify(dados)
+                    });
+                } else {
+                    // POST /materias — cria novo registro
+                    res = await fetch(`${API}/materias`, {
+                        method:  "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body:    JSON.stringify(dados)
+                    });
+                }
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    mostrarToast(data.message || "Erro ao salvar.", "error");
+                } else {
+                    mostrarToast(idOriginal ? "Matéria atualizada!" : "Matéria registrada!", "success");
+                    limparFormulario();
+                    await carregarTabela();
+                }
+            } catch (e) {
+                console.error("Erro no submit:", e);
+                mostrarToast("Erro ao conectar com o servidor.", "error");
+            } finally {
+                btnSubmit.disabled = false;
+            }
+        };
+
+        // ============================================================
+        // editarMateria(id, nome, id_professor)
+        // Preenche o formulário com os dados da linha clicada
+        // ============================================================
+        function editarMateria(id, nome, id_professor) {
+            document.getElementById("materiaIdOriginal").value = id;
+            document.getElementById("id").value                = id;
+            document.getElementById("nome").value              = nome;
+            document.getElementById("id_professor").value      = id_professor;
+
+            document.getElementById("form-titulo").textContent    = "Editar Matéria";
+            document.getElementById("form-subtitulo").textContent = "Altere os dados e clique em Salvar";
+            btnSubmit.textContent = "💾 Salvar";
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        // ============================================================
+        // deletarMateria(id)
+        // DELETE /materias/:id após confirmação
+        // ============================================================
+        async function deletarMateria(id) {
+            if (!confirm("Tem certeza que deseja excluir esta matéria?")) return;
+
+            try {
+                const res = await fetch(`${API}/materias/${id}`, { method: "DELETE" });
+
+                if (res.ok) {
+                    mostrarToast("Matéria removida.", "success");
+                    await carregarTabela();
+                } else {
+                    const data = await res.json();
+                    mostrarToast(data.message || "Erro ao remover.", "error");
+                }
+            } catch (e) {
+                console.error("Erro ao deletar:", e);
+                mostrarToast("Erro ao conectar com o servidor.", "error");
+            }
+        }
+
+        // ============================================================
+        // limparFormulario()
+        // Reseta campos e volta para modo "novo cadastro"
+        // ============================================================
+        function limparFormulario() {
+            form.reset();
+            document.getElementById("materiaIdOriginal").value    = "";
+            document.getElementById("form-titulo").textContent    = "Adicionar Nova Matéria";
+            document.getElementById("form-subtitulo").textContent = "Preencha os dados abaixo para registrar uma matéria";
+            btnSubmit.textContent = "+ Registrar";
+        }
+
+        // Carrega dados do banco ao abrir a página
+        carregarTabela();
+    </script>
+
+</body>
+</html>
