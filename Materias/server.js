@@ -144,30 +144,74 @@ app.post("/materias", (req, res) => {
 app.put("/materias/:id", (req, res) => {
   console.log("put");
 
-  const id             = parseInt(req.params.id);
-  const updatedMateria = req.body;
+  const idOriginal = parseInt(req.params.id);
+  const { id: novoId, nome, id_professor } = req.body;
 
-  // Valida nome se vier no body
-  if (updatedMateria.nome) {
-    const nomesValidos = ["Matemática", "Português", "História", "Geografia", "Ciências"];
-    if (!nomesValidos.includes(updatedMateria.nome)) {
-      return res.status(400).json({ message: `Nome inválido. Use: ${nomesValidos.join(", ")}` });
-    }
+  // Valida campos obrigatórios
+  if (!novoId || !nome || !id_professor) {
+    return res.status(400).json({ message: "Campos id, nome e id_professor são obrigatórios" });
   }
 
-  const sql    = "UPDATE materias SET nome = ?, id_professor = ? WHERE id = ?";
-  const valores = [updatedMateria.nome, updatedMateria.id_professor, id];
+  // Valida nome
+  const nomesValidos = ["Matemática", "Português", "História", "Geografia", "Ciências"];
+  if (!nomesValidos.includes(nome)) {
+    return res.status(400).json({ message: `Nome inválido. Use: ${nomesValidos.join(", ")}` });
+  }
 
-  db.query(sql, valores, (err, results) => {
+  // Verifica se o registro original existe
+  db.query("SELECT * FROM materias WHERE id = ?", [idOriginal], (err, results) => {
     if (err) {
-      console.error("Erro ao atualizar matéria:", err.message);
-      return res.status(500).json({ message: "Erro ao atualizar matéria" });
+      console.error("Erro ao buscar matéria:", err.message);
+      return res.status(500).json({ message: "Erro interno do servidor" });
     }
-    // affectedRows = 0 → ID não existe no banco
-    if (results.affectedRows === 0) {
+    if (results.length === 0) {
       return res.status(404).json({ message: "Matéria não encontrada" });
     }
-    res.json({ id, ...updatedMateria });
+
+    // Se o ID não mudou, faz UPDATE simples
+    if (parseInt(novoId) === idOriginal) {
+      const sql    = "UPDATE materias SET nome = ?, id_professor = ? WHERE id = ?";
+      const valores = [nome, parseInt(id_professor), idOriginal];
+
+      db.query(sql, valores, (err) => {
+        if (err) {
+          console.error("Erro ao atualizar:", err.message);
+          return res.status(500).json({ message: "Erro ao atualizar matéria" });
+        }
+        res.json({ id: idOriginal, nome, id_professor: parseInt(id_professor) });
+      });
+
+    } else {
+      // Se o ID mudou: verifica se o novo ID já existe
+      db.query("SELECT * FROM materias WHERE id = ?", [parseInt(novoId)], (err, results) => {
+        if (err) {
+          console.error("Erro ao verificar novo ID:", err.message);
+          return res.status(500).json({ message: "Erro interno do servidor" });
+        }
+        if (results.length > 0) {
+          return res.status(409).json({ message: "Já existe uma matéria com esse novo ID" });
+        }
+
+        // Deleta o registro antigo e insere com o novo ID
+        db.query("DELETE FROM materias WHERE id = ?", [idOriginal], (err) => {
+          if (err) {
+            console.error("Erro ao deletar registro antigo:", err.message);
+            return res.status(500).json({ message: "Erro ao atualizar matéria" });
+          }
+
+          const sql    = "INSERT INTO materias (id, nome, id_professor) VALUES (?, ?, ?)";
+          const valores = [parseInt(novoId), nome, parseInt(id_professor)];
+
+          db.query(sql, valores, (err) => {
+            if (err) {
+              console.error("Erro ao inserir novo registro:", err.message);
+              return res.status(500).json({ message: "Erro ao atualizar matéria" });
+            }
+            res.json({ id: parseInt(novoId), nome, id_professor: parseInt(id_professor) });
+          });
+        });
+      });
+    }
   });
 });
 
